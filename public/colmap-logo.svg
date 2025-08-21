@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 250">
+  <defs>
+    <style>
+      .brown-c { fill: #A0522D; }
+      .green-text { fill: #4A5D3A; }
+      .letter-style { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; }
+    </style>
+  </defs>
+  
+  <!-- C (brown) -->
+  <text x="0" y="190" class="brown-c letter-style" font-size="200">C</text>
+  
+  <!-- olmap (green) -->
+  <text x="140" y="190" class="green-text letter-style" font-size="200">olmap</text>
+</svg>

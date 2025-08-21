@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #4F1412; /* 基本文字色 */
 }
 
 @theme inline {
