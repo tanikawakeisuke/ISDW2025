@@ -1,6 +1,9 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+
+// Check if Firebase is disabled for testing
+const isFirebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,17 +14,32 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only on client side and when not disabled
+let app: any = null;
+let auth: any = null;
+let db: any = null;
 
-// Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
+if (typeof window !== 'undefined' && !isFirebaseDisabled) {
+  try {
+    // Check if Firebase app is already initialized
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error);
+    // Continue without Firebase
+  }
+}
 
-// Initialize Cloud Firestore and get a reference to the service
-export const db = getFirestore(app);
+// Export with fallbacks for SSR
+export { auth, db };
 
 // Anonymous authentication helper
 export const signInAnonymouslyHelper = async () => {
+  if (!auth || isFirebaseDisabled) {
+    throw new Error('Firebase is disabled or not initialized');
+  }
+  
   try {
     const result = await signInAnonymously(auth);
     return result.user;
