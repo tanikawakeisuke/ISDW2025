@@ -2,9 +2,30 @@
 
 import { useEffect, useState } from 'react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
   interface Window {
-    kakao: any;
+    kakao: {
+      maps: {
+        Map: any;
+        LatLng: any;
+        Marker: any;
+        MarkerImage: any;
+        Size: any;
+        Point: any;
+        CustomOverlay: any;
+        InfoWindow: any;
+        Polygon: any;
+        event: {
+          addListener: (target: any, type: string, handler: () => void) => void;
+        };
+        services: {
+          Places: any;
+          Geocoder: any;
+        };
+        load: (callback: () => void) => void;
+      };
+    };
   }
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { CANVAS_CONFIG, UserPigment } from '@/types';
-import { getCanvasPosition, getTimeUntilReset, validateCanvasSetup } from '@/utils/canvasUtils';
+import { getCanvasPosition, validateCanvasSetup } from '@/utils/canvasUtils';
 import { formatTimeUntilResetSafe } from '@/utils/clientOnly';
 import { usePlaceCanvas } from '@/hooks/usePlaceCanvas';
 import { usePigmentInventory } from '@/hooks/usePigmentInventory';
@@ -31,7 +31,6 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
   
   // Use props if provided, otherwise fallback to hook
   const { 
-    inventory, 
     selectedPigment: hookSelectedPigment, 
     setSelectedPigment, 
     usePigment: hookUsePigment, 
@@ -282,7 +281,8 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
     } finally {
       setIsPlacing(false);
     }
-  }, [isPlacing, selectedPigment, canUsePigment, usePigment, placePixel, getPixelAt, drawCanvas, placementCooldown]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlacing, selectedPigment, canUsePigment, placePixel, getPixelAt, drawCanvas, placementCooldown]);
 
   // Handle mouse/touch move for hover preview
   const handleCanvasMove = useCallback((

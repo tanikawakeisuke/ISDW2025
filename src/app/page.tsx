@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Palette, Users, Clock, Settings, Coffee } from 'lucide-react';
+import { Palette, Users, Clock, Settings, Coffee } from 'lucide-react';
 import { CafeMap } from '@/components/CafeMap';
 import { PlaceCanvas } from '@/components/PlaceCanvas';
 import { PigmentPalette } from '@/components/PigmentPalette';
@@ -19,7 +19,7 @@ export default function Home() {
   const [timeUntilReset, setTimeUntilReset] = useState('');
   const [mounted, setMounted] = useState(false);
   
-  const { user, userData, signIn } = useAuth();
+  const { user, signIn } = useAuth();
   const { location, error: locationError, refetch } = useLocation(true);
   const { nearbyCafes, collectibleCafes, dailyStatus } = useCafeCollection(location);
   const { addPigment, inventory, selectedPigment, setSelectedPigment, usePigment, canUsePigment, addPigmentToInventory } = usePigmentInventory();
