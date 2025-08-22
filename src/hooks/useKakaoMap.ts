@@ -34,6 +34,12 @@ export const useKakaoMap = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if API key is available
+    if (!process.env.NEXT_PUBLIC_KAKAO_APP_KEY) {
+      setError('Kakao Maps API key not found. Check environment variables.');
+      return;
+    }
+
     // Check if Kakao Maps is already loaded with services
     if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
       setIsLoaded(true);
@@ -63,7 +69,7 @@ export const useKakaoMap = () => {
     };
 
     script.onerror = () => {
-      setError('Failed to load Kakao Maps script');
+      setError('Failed to load Kakao Maps script. Check API key and domain settings.');
     };
 
     document.head.appendChild(script);
