@@ -17,6 +17,7 @@ interface UsePigmentInventoryResult {
   canUsePigment: (pigmentId: string) => boolean;
   addPigmentToInventory: (pigment: UserPigment) => void; // For instant UI updates
   restoreAllPigments: () => Promise<void>; // 色の回数を最大まで回復
+  editPigment: (pigmentId: string, newColor: string, newName: string) => Promise<void>; // Edit existing pigment
 }
 
 export const usePigmentInventory = (): UsePigmentInventoryResult => {
@@ -266,6 +267,44 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     console.log('Pigments now have unlimited uses - no need to restore');
   }, []);
 
+  // Edit existing pigment color and name
+  const editPigment = useCallback(async (pigmentId: string, newColor: string, newName: string) => {
+    if (!user?.uid) return;
+
+    // Find the pigment to edit
+    const pigmentToEdit = inventory.find(p => p.pigmentId === pigmentId);
+    if (!pigmentToEdit) return;
+
+    // Optimistically update UI first
+    const updatedInventory = inventory.map(p => 
+      p.pigmentId === pigmentId 
+        ? { ...p, color: newColor, name: newName }
+        : p
+    );
+    setInventory(updatedInventory);
+
+    // Background save to storage
+    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
+    if (firebaseDisabled) {
+      // Save to localStorage for testing
+      localStorage.setItem(`inventory-${user.uid}`, JSON.stringify(updatedInventory));
+    } else {
+      try {
+        // Save to Firestore in background
+        const pigmentRef = doc(db, 'users', user.uid, 'pigments', pigmentToEdit.color);
+        await updateDoc(pigmentRef, {
+          color: newColor,
+          name: newName,
+          lastModified: new Date()
+        });
+      } catch (error) {
+        console.error('Failed to update pigment in Firestore:', error);
+        // Revert UI changes on error
+        setInventory(inventory);
+      }
+    }
+  }, [user?.uid, inventory]);
+
   return {
     inventory,
     loading,
@@ -275,6 +314,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     usePigment,
     canUsePigment,
     addPigmentToInventory,
-    restoreAllPigments
+    restoreAllPigments,
+    editPigment
   };
 };

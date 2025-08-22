@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserPigment } from '@/types';
 import { usePigmentInventory } from '@/hooks/usePigmentInventory';
 
@@ -10,6 +10,7 @@ interface PigmentPaletteProps {
   selectedPigment?: UserPigment | null;
   setSelectedPigment?: (pigment: UserPigment | null) => void;
   canUsePigment?: (pigmentId: string) => boolean;
+  editPigment?: (pigmentId: string, newColor: string, newName: string) => Promise<void>;
 }
 
 export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
@@ -17,14 +18,16 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
   inventory: propInventory,
   selectedPigment: propSelectedPigment,
   setSelectedPigment: propSetSelectedPigment,
-  canUsePigment: propCanUsePigment
+  canUsePigment: propCanUsePigment,
+  editPigment: propEditPigment
 }) => {
   const { 
     inventory: hookInventory, 
     loading, 
     selectedPigment: hookSelectedPigment, 
     setSelectedPigment: hookSetSelectedPigment, 
-    canUsePigment: hookCanUsePigment 
+    canUsePigment: hookCanUsePigment,
+    editPigment: hookEditPigment
   } = usePigmentInventory();
 
   // Use props if provided, otherwise fallback to hook
@@ -32,6 +35,40 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
   const selectedPigment = propSelectedPigment !== undefined ? propSelectedPigment : hookSelectedPigment;
   const setSelectedPigment = propSetSelectedPigment || hookSetSelectedPigment;
   const canUsePigment = propCanUsePigment || hookCanUsePigment;
+  const editPigment = propEditPigment || hookEditPigment;
+
+  // State for editing
+  const [editingPigment, setEditingPigment] = useState<string | null>(null);
+  const [editColor, setEditColor] = useState('');
+  const [editName, setEditName] = useState('');
+
+  // Start editing a pigment
+  const startEditing = (pigment: UserPigment) => {
+    setEditingPigment(pigment.pigmentId);
+    setEditColor(pigment.color);
+    setEditName(pigment.name);
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingPigment(null);
+    setEditColor('');
+    setEditName('');
+  };
+
+  // Save edited pigment
+  const saveEditing = async () => {
+    if (!editingPigment || !editColor || !editName) return;
+    
+    try {
+      await editPigment(editingPigment, editColor, editName);
+      setEditingPigment(null);
+      setEditColor('');
+      setEditName('');
+    } catch (error) {
+      console.error('Failed to edit pigment:', error);
+    }
+  };
 
 
   if (loading) {
@@ -91,12 +128,11 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
           const isSelected = selectedPigment?.pigmentId === pigment.pigmentId;
           const isUsable = canUsePigment(pigment.pigmentId);
           const rarityColor = getRarityColor(pigment.rarity);
+          const isEditing = editingPigment === pigment.pigmentId;
 
           return (
-            <button
+            <div
               key={pigment.pigmentId}
-              onClick={() => setSelectedPigment(isSelected ? null : pigment)}
-              disabled={!isUsable}
               className={`
                 relative p-3 rounded-lg border-2 transition-all duration-200
                 ${isSelected 
@@ -112,40 +148,87 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
                 borderColor: isSelected ? '#3B82F6' : (isUsable ? rarityColor : '#E5E7EB')
               }}
             >
-              {/* Color preview */}
-              <div 
-                className="w-full h-8 rounded mb-2 border"
-                style={{ backgroundColor: pigment.color }}
-              />
+              {/* Edit Mode */}
+              {isEditing ? (
+                <div className="space-y-2">
+                  <input
+                    type="color"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    className="w-full h-8 rounded border cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-2 py-1 text-xs border rounded"
+                    placeholder="Pigment name"
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={saveEditing}
+                      className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="flex-1 px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Color preview */}
+                  <div 
+                    className="w-full h-8 rounded mb-2 border cursor-pointer"
+                    style={{ backgroundColor: pigment.color }}
+                    onClick={() => setSelectedPigment(isSelected ? null : pigment)}
+                  />
 
-              {/* Pigment info */}
-              <div className="text-xs text-left">
-                <div className="font-medium truncate" title={pigment.name}>
-                  {pigment.name}
-                </div>
-                <div 
-                  className="text-xs font-medium capitalize"
-                  style={{ color: rarityColor }}
-                >
-                  {getRarityLabel(pigment.rarity)}
-                </div>
-              </div>
+                  {/* Pigment info */}
+                  <div className="text-xs text-left mb-2">
+                    <div className="font-medium truncate" title={pigment.name}>
+                      {pigment.name}
+                    </div>
+                    <div 
+                      className="text-xs font-medium capitalize"
+                      style={{ color: rarityColor }}
+                    >
+                      {getRarityLabel(pigment.rarity)}
+                    </div>
+                  </div>
 
-              {/* Unlimited uses indicator */}
-              <div className="flex items-center justify-center mt-2">
-                <div className="text-xs text-green-600 font-medium">
-                  ∞ Unlimited
-                </div>
-              </div>
+                  {/* Unlimited uses indicator */}
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="text-xs text-green-600 font-medium">
+                      ∞ Unlimited
+                    </div>
+                  </div>
+
+                  {/* Edit button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(pigment);
+                    }}
+                    className="w-full px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
 
               {/* Selection indicator */}
-              {isSelected && (
+              {isSelected && !isEditing && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
               )}
 
-            </button>
+            </div>
           );
         })}
       </div>
