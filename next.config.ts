@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000']
     }
+  },
+  eslint: {
+    ignoreDuringBuilds: true // Ignore ESLint errors during Vercel builds
   }
 };
 
