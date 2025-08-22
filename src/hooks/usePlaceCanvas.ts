@@ -28,8 +28,15 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
   // Initialize canvas for current day
   const initializeCanvas = useCallback(async () => {
     // Check if Firebase is available
-    if (!isFirebaseAvailable() || !db) {
+    if (!isFirebaseAvailable()) {
       console.log('Canvas initialized in offline mode');
+      setLoading(false);
+      return;
+    }
+
+    // Additional null check for db
+    if (!db) {
+      console.error('Firebase db is not available for canvas initialization');
       setLoading(false);
       return;
     }
@@ -71,7 +78,7 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
     initializeCanvas();
 
     // Check if Firebase is available
-    if (!isFirebaseAvailable() || !db) {
+    if (!isFirebaseAvailable()) {
       // Use local storage for testing
       const savedPixels = localStorage.getItem(`canvas-${currentDayId}`);
       const pixelMap = new Map<string, CanvasPixel>();
@@ -108,6 +115,13 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
       }
       
       setPixels(pixelMap);
+      setLoading(false);
+      return;
+    }
+
+    // Additional null check for db
+    if (!db) {
+      console.error('Firebase db is not available for canvas');
       setLoading(false);
       return;
     }
@@ -160,7 +174,7 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
     const pixelKey = getPixelKey(x, y);
 
     // Check if Firebase is available
-    if (!isFirebaseAvailable() || !db) {
+    if (!isFirebaseAvailable()) {
       // Update local state and localStorage for testing
       const newPixel: CanvasPixel = {
         x,
@@ -188,6 +202,12 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
       });
 
       return true;
+    }
+
+    // Additional null check for db
+    if (!db) {
+      console.error('Firebase db is not available for pixel placement');
+      return false;
     }
 
     try {
