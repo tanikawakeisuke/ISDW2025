@@ -202,7 +202,9 @@ export default function Home() {
                 <br />
                 <strong>Daily Limit Bypass:</strong> {process.env.NEXT_PUBLIC_BYPASS_DAILY_LIMIT === 'true' ? 'ON' : 'OFF'}
                 <br />
-                <strong>Default Location:</strong> 37.545929, 127.045590
+                <strong>Firebase Disabled:</strong> {process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true' ? 'ON' : 'OFF'}
+                <br />
+                <strong>Default Location:</strong> 37.546011, 127.045591
               </div>
               <div>
                 <strong>Current Location:</strong> {location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : 'Loading...'}
@@ -211,12 +213,38 @@ export default function Home() {
                 <br />
                 <strong>In Range:</strong> {collectibleCafes.length} cafes
                 <br />
-                <button
-                  onClick={restoreAllPigments}
-                  className="mt-2 bg-[#4F1412] text-white px-3 py-1 rounded text-xs hover:bg-[#3E100E] transition-colors"
-                >
-                  Restore All Pigments
-                </button>
+                <strong>Daily Collections:</strong> {dailyStatus?.totalCollections || 0}
+                <br />
+                <strong>Current Inventory:</strong> {inventory.length} pigments
+                <br />
+                <div className="mt-2 space-y-1">
+                  <button
+                    onClick={restoreAllPigments}
+                    className="w-full bg-[#4F1412] text-white px-3 py-1 rounded text-xs hover:bg-[#3E100E] transition-colors"
+                  >
+                    Restore All Pigments
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Test pigment collection manually
+                      const testPigment = {
+                        pigmentId: `test-${Date.now()}`,
+                        color: '#FF6B6B',
+                        name: 'Test Red',
+                        rarity: 'common' as const,
+                        usesLeft: 5,
+                        collectedAt: new Date(),
+                        collectedFrom: 'test-cafe'
+                      };
+                      addPigmentToInventory(testPigment);
+                      setCollectionMessage('Test pigment added! 🎨');
+                      setTimeout(() => setCollectionMessage(''), 3000);
+                    }}
+                    className="w-full bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                  >
+                    Add Test Pigment
+                  </button>
+                </div>
               </div>
             </div>
           </div>

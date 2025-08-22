@@ -4,13 +4,18 @@ import type { NextConfig } from "next";
 const withPWA = require('next-pwa');
 
 const nextConfig: NextConfig = {
+  output: 'export', // Enable static export for Firebase Hosting
+  trailingSlash: true, // Add trailing slashes for better static hosting
+  images: {
+    unoptimized: true // Disable image optimization for static export
+  },
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000']
     }
   },
   eslint: {
-    ignoreDuringBuilds: true // Ignore ESLint errors during Vercel builds
+    ignoreDuringBuilds: true // Ignore ESLint errors during builds
   }
 };
 

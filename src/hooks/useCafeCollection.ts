@@ -210,24 +210,36 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
     pigment?: UserPigment; 
     error?: string 
   }> => {
+    console.log('🎨 Attempting to collect from cafe:', cafe.name);
+    console.log('🎨 User location:', userLocation);
+    console.log('🎨 Daily status:', dailyStatus);
+    
     if (!user?.uid || !userLocation || !dailyStatus) {
-      return { success: false, error: 'User not authenticated or location unavailable' };
+      const error = 'User not authenticated or location unavailable';
+      console.log('🎨 Collection failed:', error);
+      return { success: false, error };
     }
 
     // Check if already collected from this cafe today
     if (dailyStatus.collectedCafes.includes(cafe.id)) {
-      return { success: false, error: 'Already collected from this cafe today' };
+      const error = 'Already collected from this cafe today';
+      console.log('🎨 Collection failed:', error);
+      return { success: false, error };
     }
 
     // Check if cafe is within collection range and user is in Seongsu-dong
     const inRangeCafes = getCafesInCollectionRange(userLocation, [cafe]);
+    console.log('🎨 In range cafes:', inRangeCafes.length);
     if (inRangeCafes.length === 0) {
-      return { success: false, error: 'Must be within 30m of cafe and inside Seongsu-dong area' };
+      const error = 'Must be within 30m of cafe and inside Seongsu-dong area';
+      console.log('🎨 Collection failed:', error);
+      return { success: false, error };
     }
 
     // Pre-calculate pigment data
     const rarityResult = calculateRarity(userLocation, cafe, nearbyCafes);
     const generatedPigment = generateCafePigment(cafe, rarityResult.rarity, rarityResult.factors);
+    console.log('🎨 Generated pigment:', generatedPigment);
     
     const userPigment: UserPigment = {
       pigmentId: generatedPigment.id,
