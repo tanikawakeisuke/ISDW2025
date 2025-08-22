@@ -91,33 +91,6 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
       ctx.fillRect(pixel.x, pixel.y, 1, 1);
     });
     
-    // Draw debug grid in development mode
-    if (process.env.NODE_ENV === 'development' && canvas.width <= 512) {
-      ctx.strokeStyle = 'rgba(200, 200, 200, 0.3)';
-      ctx.lineWidth = 1;
-      
-      // Draw vertical grid lines every 50 pixels
-      for (let x = 50; x < canvas.width; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x + 0.5, 0);
-        ctx.lineTo(x + 0.5, canvas.height);
-        ctx.stroke();
-      }
-      
-      // Draw horizontal grid lines every 50 pixels
-      for (let y = 50; y < canvas.height; y += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, y + 0.5);
-        ctx.lineTo(canvas.width, y + 0.5);
-        ctx.stroke();
-      }
-      
-      // Draw coordinate labels
-      ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
-      ctx.font = '10px monospace';
-      ctx.fillText('0,0', 2, 12);
-      ctx.fillText(`${canvas.width-1},${canvas.height-1}`, canvas.width-40, canvas.height-5);
-    }
 
     // Draw hover preview (5x5 brush)
     if (hoverPosition && selectedPigment && canUsePigment(selectedPigment.pigmentId) && placementCooldown === 0) {
