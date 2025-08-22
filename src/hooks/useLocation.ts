@@ -14,8 +14,8 @@ interface UseLocationResult {
 
 // 一般公開時のデフォルト位置（聖水洞エリア内）
 const DEFAULT_PUBLIC_LOCATION: Location = {
-  lat: 37.545997,
-  lng: 127.045632,
+  lat: 37.546,
+  lng: 127.045590,
   accuracy: 100
 };
 
@@ -33,15 +33,10 @@ export const useLocation = (watchMode: boolean = false): UseLocationResult => {
   }, []);
 
   const handleLocationError = useCallback((err: GeolocationPositionError) => {
-    // 一般公開時は位置取得エラーでもデフォルト位置を使用
-    if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_DEFAULT_LOCATION === 'true') {
-      console.log('Using default location for public deployment');
-      handleLocationUpdate(DEFAULT_PUBLIC_LOCATION);
-    } else {
-      setError(`Location error: ${err.message}`);
-      setLoading(false);
-    }
-  }, []);
+    // ローカル環境でもデフォルト位置を使用
+    console.log('Using default location for demo');
+    handleLocationUpdate(DEFAULT_PUBLIC_LOCATION);
+  }, [handleLocationUpdate]);
 
   const fetchCurrentLocation = useCallback(async () => {
     setLoading(true);
@@ -66,14 +61,9 @@ export const useLocation = (watchMode: boolean = false): UseLocationResult => {
       try {
         watchId = watchPosition(handleLocationUpdate, handleLocationError);
       } catch (err) {
-        // 一般公開時は位置取得エラーでもデフォルト位置を使用
-        if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_USE_DEFAULT_LOCATION === 'true') {
-          console.log('Using default location for public deployment');
-          handleLocationUpdate(DEFAULT_PUBLIC_LOCATION);
-        } else {
-          setError('Geolocation is not supported by this browser.');
-          setLoading(false);
-        }
+        // ローカル環境でもデフォルト位置を使用
+        console.log('Using default location for demo');
+        handleLocationUpdate(DEFAULT_PUBLIC_LOCATION);
       }
     } else {
       // Get current position once

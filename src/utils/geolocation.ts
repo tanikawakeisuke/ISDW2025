@@ -38,6 +38,13 @@ export function getCafeBusLocations() {
 // Check if bypass is enabled
 const BYPASS_LOCATION = process.env.NEXT_PUBLIC_BYPASS_LOCATION === 'true';
 
+// 一般公開時のデフォルト位置（聖水洞エリア内）
+const DEFAULT_PUBLIC_LOCATION: Location = {
+  lat: 37.545929,
+  lng: 127.045590,
+  accuracy: 100
+};
+
 // Point-in-polygon algorithm
 function isPointInPolygon(point: Location, polygon: number[][]): boolean {
   const x = point.lng;
@@ -61,7 +68,9 @@ function isPointInPolygon(point: Location, polygon: number[][]): boolean {
 export const getCurrentPosition = (): Promise<Location> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by this browser.'));
+      // ローカル環境でもデフォルト位置を返す
+      console.log('Geolocation not supported, using default location for demo');
+      resolve(DEFAULT_PUBLIC_LOCATION);
       return;
     }
 
@@ -85,7 +94,9 @@ export const getCurrentPosition = (): Promise<Location> => {
         });
       },
       (error) => {
-        reject(error);
+        // ローカル環境でも位置取得エラーでもデフォルト位置を返す
+        console.log('Location error, using default location for demo');
+        resolve(DEFAULT_PUBLIC_LOCATION);
       },
       {
         enableHighAccuracy: true,
@@ -101,21 +112,27 @@ export const watchPosition = (
   onError: (error: GeolocationPositionError) => void
 ): number => {
   if (!navigator.geolocation) {
-    throw new Error('Geolocation is not supported by this browser.');
+    // ローカル環境でもデフォルト位置を使用
+    console.log('Geolocation not supported, using default location for demo');
+    onSuccess(DEFAULT_PUBLIC_LOCATION);
+    // 定期的にデフォルト位置を返す
+    const interval = setInterval(() => {
+      onSuccess(DEFAULT_PUBLIC_LOCATION);
+    }, 30000);
+    return interval as unknown as number;
   }
 
-  // If bypass is enabled, simulate position updates
+  // If bypass is enabled, return fixed position (no random movement)
   if (BYPASS_LOCATION) {
-    const interval = setInterval(() => {
-      // Simulate movement within Seongsu-dong
-      onSuccess({
-        lat: 37.5444 + (Math.random() - 0.5) * 0.002, // Small variation
-        lng: 127.0445 + (Math.random() - 0.5) * 0.002,
-        accuracy: 10,
-      });
-    }, 30000); // 30 seconds interval instead of 5 seconds
+    // Return fixed location once, no interval updates
+    onSuccess({
+      lat: 37.5444,
+      lng: 127.0445,
+      accuracy: 10,
+    });
     
-    return interval;
+    // Return dummy interval ID since some code might expect to clear it
+    return 0;
   }
 
   return navigator.geolocation.watchPosition(

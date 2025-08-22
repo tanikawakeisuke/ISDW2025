@@ -224,7 +224,6 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
       color: generatedPigment.color,
       name: generatedPigment.name,
       rarity: generatedPigment.rarity,
-      usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
       collectedAt: new Date(),
       collectedFrom: cafe.id
     };
@@ -297,7 +296,6 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
               color: userPigment.color,
               name: userPigment.name,
               rarity: userPigment.rarity,
-              usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
               collectedAt: new Date(),
               collectedFrom: cafe.id
             })

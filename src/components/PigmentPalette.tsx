@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserPigment, CANVAS_CONFIG } from '@/types';
+import { UserPigment } from '@/types';
 import { usePigmentInventory } from '@/hooks/usePigmentInventory';
 
 interface PigmentPaletteProps {
@@ -82,7 +82,7 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Pigment Inventory</h3>
         <div className="text-sm text-gray-500">
-          {inventory.filter(p => p.usesLeft > 0).length} / {inventory.length} available
+          {inventory.length} collected
         </div>
       </div>
 
@@ -131,23 +131,11 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
                 </div>
               </div>
 
-              {/* Uses left indicator */}
-              <div className="flex items-center justify-between mt-2">
-                <div className="text-xs text-gray-600">
-                  Uses: {pigment.usesLeft}/{CANVAS_CONFIG.MAX_PIGMENT_USES}
+              {/* Unlimited uses indicator */}
+              <div className="flex items-center justify-center mt-2">
+                <div className="text-xs text-green-600 font-medium">
+                  ∞ Unlimited
                 </div>
-                {pigment.usesLeft > 0 && (
-                  <div className="flex space-x-0.5">
-                    {[...Array(CANVAS_CONFIG.MAX_PIGMENT_USES)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          i < pigment.usesLeft ? 'bg-green-400' : 'bg-gray-200'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Selection indicator */}
@@ -157,12 +145,6 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
                 </div>
               )}
 
-              {/* Empty indicator */}
-              {!isUsable && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                  <span className="text-white text-xs font-medium">Empty</span>
-                </div>
-              )}
             </button>
           );
         })}
@@ -179,19 +161,15 @@ export const PigmentPalette: React.FC<PigmentPaletteProps> = ({
             <div className="flex-1">
               <div className="font-medium">{selectedPigment.name}</div>
               <div className="text-sm text-gray-600">
-                {getRarityLabel(selectedPigment.rarity)} • {selectedPigment.usesLeft} uses left
+                {getRarityLabel(selectedPigment.rarity)} • Unlimited uses
               </div>
             </div>
-            {canUsePigment(selectedPigment.pigmentId) ? (
-              <div className="text-green-600 text-sm font-medium">Ready to place</div>
-            ) : (
-              <div className="text-red-600 text-sm font-medium">No uses left</div>
-            )}
+            <div className="text-green-600 text-sm font-medium">Ready to place</div>
           </div>
         </div>
       )}
 
-      {!selectedPigment && inventory.some(p => p.usesLeft > 0) && (
+      {!selectedPigment && inventory.length > 0 && (
         <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-600 text-sm">
           Select a pigment to start placing pixels on the canvas
         </div>

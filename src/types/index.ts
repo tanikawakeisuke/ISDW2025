@@ -18,7 +18,6 @@ export interface UserPigment {
   color: string;
   name: string;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-  usesLeft: number; // Maximum 5
   lastUsed?: Date;
   collectedAt: Date;
   collectedFrom: string; // cafe ID
@@ -53,8 +52,7 @@ export interface CanvasDay {
 // Canvas Configuration
 export const CANVAS_CONFIG = {
   WIDTH: 512,
-  HEIGHT: 288,
-  MAX_PIGMENT_USES: 5
+  HEIGHT: 288
 } as const;
 
 // Location types

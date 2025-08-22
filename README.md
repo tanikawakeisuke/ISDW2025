@@ -1,3 +1,5 @@
+# Urban Pigment PWA
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -19,6 +21,31 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+### 2. 環境変数設定
+`.env.local.example`を`.env.local`にコピーして以下の値を設定：
+
+```bash
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Apple MapKit JS
+NEXT_PUBLIC_MAPKIT_JS_TOKEN=your_mapkit_token_here
+
+# 開発・デモ用: 位置制限のバイパス（true でポリゴン外/カフェ距離チェックを無効化）
+NEXT_PUBLIC_BYPASS_LOCATION=true
+
+# 開発・デモ用: 日次収集制限のバイパス（true で1日1回制限を無効化）
+NEXT_PUBLIC_BYPASS_DAILY_LIMIT=true
+
+# 一般公開用: デフォルト位置の使用（true で位置取得エラー時に聖水洞エリア内の固定位置を使用）
+NEXT_PUBLIC_USE_DEFAULT_LOCATION=false
+```
 
 ## Learn More
 

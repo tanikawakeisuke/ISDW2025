@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { CANVAS_CONFIG, UserPigment } from '@/types';
-import { getCanvasPosition, getTimeUntilReset } from '@/utils/canvasUtils';
+import { getCanvasPosition, getTimeUntilReset, validateCanvasSetup } from '@/utils/canvasUtils';
 import { formatTimeUntilResetSafe } from '@/utils/clientOnly';
 import { usePlaceCanvas } from '@/hooks/usePlaceCanvas';
 import { usePigmentInventory } from '@/hooks/usePigmentInventory';
@@ -79,15 +79,46 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Ensure no transformations are applied that could affect coordinate mapping
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
     // Clear canvas with white background
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, CANVAS_CONFIG.WIDTH, CANVAS_CONFIG.HEIGHT);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw all pixels
     pixels.forEach((pixel) => {
       ctx.fillStyle = pixel.color;
       ctx.fillRect(pixel.x, pixel.y, 1, 1);
     });
+    
+    // Draw debug grid in development mode
+    if (process.env.NODE_ENV === 'development' && canvas.width <= 512) {
+      ctx.strokeStyle = 'rgba(200, 200, 200, 0.3)';
+      ctx.lineWidth = 1;
+      
+      // Draw vertical grid lines every 50 pixels
+      for (let x = 50; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, 0);
+        ctx.lineTo(x + 0.5, canvas.height);
+        ctx.stroke();
+      }
+      
+      // Draw horizontal grid lines every 50 pixels
+      for (let y = 50; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.5);
+        ctx.lineTo(canvas.width, y + 0.5);
+        ctx.stroke();
+      }
+      
+      // Draw coordinate labels
+      ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
+      ctx.font = '10px monospace';
+      ctx.fillText('0,0', 2, 12);
+      ctx.fillText(`${canvas.width-1},${canvas.height-1}`, canvas.width-40, canvas.height-5);
+    }
 
     // Draw hover preview (5x5 brush)
     if (hoverPosition && selectedPigment && canUsePigment(selectedPigment.pigmentId) && placementCooldown === 0) {
@@ -103,7 +134,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
           const pixelY = hoverPosition.y + dy;
           
           // Check if pixel is within canvas bounds and not already occupied
-          if (pixelX >= 0 && pixelX < CANVAS_CONFIG.WIDTH && pixelY >= 0 && pixelY < CANVAS_CONFIG.HEIGHT) {
+          if (pixelX >= 0 && pixelX < canvas.width && pixelY >= 0 && pixelY < canvas.height) {
             const existingPixelAtPos = getPixelAt(pixelX, pixelY);
             if (!existingPixelAtPos) {
               ctx.fillRect(pixelX, pixelY, 1, 1);
@@ -116,18 +147,44 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
     }
   }, [pixels, hoverPosition, selectedPigment, canUsePigment, getPixelAt, placementCooldown]);
 
-  // Initialize canvas
+  // Initialize canvas with precise size setup
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Set internal canvas size to exact dimensions
     canvas.width = CANVAS_CONFIG.WIDTH;
     canvas.height = CANVAS_CONFIG.HEIGHT;
+
+    // Ensure CSS display size matches internal size exactly - NO SCALING
+    canvas.style.width = `${CANVAS_CONFIG.WIDTH}px`;
+    canvas.style.height = `${CANVAS_CONFIG.HEIGHT}px`;
 
     // Disable image smoothing for pixel-perfect rendering
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.msImageSmoothingEnabled = false;
+      
+      // Reset any transformations that might cause coordinate offset
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    console.log(`Canvas setup: internal=${canvas.width}x${canvas.height}, display=${canvas.style.width}x${canvas.style.height}, devicePixelRatio=${window.devicePixelRatio}`);
+    
+    // Validate canvas setup for coordinate transformation issues
+    if (process.env.NODE_ENV === 'development') {
+      setTimeout(() => {
+        const validation = validateCanvasSetup(canvas);
+        if (!validation.isValid) {
+          console.warn('Canvas setup issues detected:', validation.issues);
+          console.log('Recommendations:', validation.recommendations);
+        } else {
+          console.log('✅ Canvas coordinate transformation setup is valid');
+        }
+      }, 100);
     }
   }, []);
 
@@ -149,6 +206,23 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
     if (!canvas) return;
 
     const { x, y } = getCanvasPosition(event, canvas);
+    
+    // Visual debug feedback in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Click at canvas coordinates: (${x}, ${y})`);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Save current drawing state
+        const currentFillStyle = ctx.fillStyle;
+        // Draw a small red dot at click position for debugging
+        ctx.fillStyle = '#FF0000';
+        ctx.fillRect(x, y, 3, 3);
+        // Restore drawing state
+        ctx.fillStyle = currentFillStyle;
+        // Clear the debug dot after 500ms
+        setTimeout(() => drawCanvas(), 500);
+      }
+    }
 
     // Check if pixel already exists
     const existingPixel = getPixelAt(x, y);
@@ -175,7 +249,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
           const pixelY = y + dy;
           
           // Check if pixel is within canvas bounds
-          if (pixelX >= 0 && pixelX < CANVAS_CONFIG.WIDTH && pixelY >= 0 && pixelY < CANVAS_CONFIG.HEIGHT) {
+          if (pixelX >= 0 && pixelX < canvas.width && pixelY >= 0 && pixelY < canvas.height) {
             const existingPixelAtPos = getPixelAt(pixelX, pixelY);
             if (!existingPixelAtPos) {
               const success = await placePixel(pixelX, pixelY, selectedPigment.color, selectedPigment.pigmentId);
@@ -283,10 +357,13 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
           onTouchMove={handleCanvasMove}
           onMouseLeave={handleCanvasLeave}
           style={{ 
-            imageRendering: 'auto',
+            imageRendering: 'pixelated',
+            imageRendering: '-moz-crisp-edges' as any,
+            imageRendering: 'crisp-edges' as any,
             display: 'block',
-            width: '512px',
-            height: '288px'
+            width: `${CANVAS_CONFIG.WIDTH}px`,
+            height: `${CANVAS_CONFIG.HEIGHT}px`,
+            touchAction: 'none' // Prevent scrolling on touch
           }}
         />
 
@@ -313,7 +390,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
       <div className="text-sm text-gray-600 space-y-1">
         <p>• Select a pigment from your inventory below</p>
         <p>• Click on an empty pixel to place your color</p>
-        <p>• Each pigment can be used up to {CANVAS_CONFIG.MAX_PIGMENT_USES} times</p>
+        <p>• Each pigment has unlimited uses</p>
         <p>• Canvas resets daily at midnight KST</p>
       </div>
     </div>

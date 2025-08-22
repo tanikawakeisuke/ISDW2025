@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPigment, CANVAS_CONFIG } from '@/types';
+import { UserPigment } from '@/types';
 
 interface UsePigmentInventoryResult {
   inventory: UserPigment[];
@@ -15,6 +15,7 @@ interface UsePigmentInventoryResult {
   usePigment: (pigmentId: string) => Promise<boolean>;
   canUsePigment: (pigmentId: string) => boolean;
   addPigmentToInventory: (pigment: UserPigment) => void; // For instant UI updates
+  restoreAllPigments: () => Promise<void>; // 色の回数を最大まで回復
 }
 
 export const usePigmentInventory = (): UsePigmentInventoryResult => {
@@ -45,8 +46,9 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
         const inventory = JSON.parse(savedInventory);
         setInventory(inventory.map((p: any) => ({
           ...p,
-          collectedAt: p.collectedAt ? new Date(p.collectedAt) : undefined,
-          lastUsed: p.lastUsed ? new Date(p.lastUsed) : undefined
+          collectedAt: p.collectedAt ? new Date(p.collectedAt) : new Date(),
+          lastUsed: p.lastUsed ? new Date(p.lastUsed) : undefined,
+          collectedFrom: p.collectedFrom || 'demo-cafe'
         })));
       } else {
         // Create demo inventory for testing
@@ -56,40 +58,40 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#FF0000',
             name: 'Seoul Red',
             rarity: 'common',
-            usesLeft: 5,
-            collectedAt: new Date()
+            collectedAt: new Date(),
+            collectedFrom: 'demo-cafe'
           },
           {
             pigmentId: 'demo-blue',
             color: '#0000FF',
             name: 'Han River Blue',
             rarity: 'uncommon',
-            usesLeft: 3,
-            collectedAt: new Date()
+            collectedAt: new Date(),
+            collectedFrom: 'demo-cafe'
           },
           {
             pigmentId: 'demo-green',
             color: '#00FF00',
             name: 'Seongsu Green',
             rarity: 'rare',
-            usesLeft: 1,
-            collectedAt: new Date()
+            collectedAt: new Date(),
+            collectedFrom: 'demo-cafe'
           },
           {
             pigmentId: 'demo-yellow',
             color: '#FFFF00',
             name: 'Gangnam Gold',
             rarity: 'epic',
-            usesLeft: 5,
-            collectedAt: new Date()
+            collectedAt: new Date(),
+            collectedFrom: 'demo-cafe'
           },
           {
             pigmentId: 'demo-purple',
             color: '#800080',
             name: 'Mystic Purple',
             rarity: 'legendary',
-            usesLeft: 2,
-            collectedAt: new Date()
+            collectedAt: new Date(),
+            collectedFrom: 'demo-cafe'
           }
         ];
         setInventory(demoInventory);
@@ -111,7 +113,6 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
           color: data.color,
           name: data.name,
           rarity: data.rarity,
-          usesLeft: data.usesLeft || 0,
           lastUsed: data.lastUsed?.toDate()
         });
       });
@@ -119,7 +120,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       // Sort by rarity and uses left
       userInventory.sort((a, b) => {
         const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-        return rarityOrder[b.rarity] - rarityOrder[a.rarity] || b.usesLeft - a.usesLeft;
+        return rarityOrder[b.rarity] - rarityOrder[a.rarity];
       });
       
       setInventory(userInventory);
@@ -151,7 +152,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       if (existing) {
         updatedInventory = inventory.map(p => 
           p.pigmentId === pigmentId 
-            ? { ...p, usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES, collectedAt: new Date() }
+            ? { ...p, collectedAt: new Date() }
             : p
         );
       } else {
@@ -160,8 +161,8 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
           color,
           name,
           rarity,
-          usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
-          collectedAt: new Date()
+          collectedAt: new Date(),
+          collectedFrom: 'demo-cafe'
         }];
       }
       
@@ -175,9 +176,8 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       const existingDoc = await getDoc(pigmentRef);
       
       if (existingDoc.exists()) {
-        // Reset uses if pigment already exists
+        // Update last collected date if pigment already exists
         await updateDoc(pigmentRef, {
-          usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
           lastCollected: new Date()
         });
       } else {
@@ -186,7 +186,6 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
           color,
           name,
           rarity,
-          usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
           firstCollected: new Date()
         });
       }
@@ -201,7 +200,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     if (!user?.uid) return false;
 
     const pigment = inventory.find(p => p.pigmentId === pigmentId);
-    if (!pigment || pigment.usesLeft <= 0) return false;
+    if (!pigment) return false;
 
     // Check if Firebase is disabled for testing
     const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
@@ -210,7 +209,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       // Update local inventory for testing
       const updatedInventory = inventory.map(p => 
         p.pigmentId === pigmentId 
-          ? { ...p, usesLeft: p.usesLeft - 1, lastUsed: new Date() }
+          ? { ...p, lastUsed: new Date() }
           : p
       );
       
@@ -225,7 +224,6 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       // Use color as document ID for consistency
       const pigmentRef = doc(db, 'users', user.uid, 'pigments', pigment.color);
       await updateDoc(pigmentRef, {
-        usesLeft: pigment.usesLeft - 1,
         lastUsed: new Date()
       });
       return true;
@@ -238,7 +236,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
   // Check if pigment can be used
   const canUsePigment = useCallback((pigmentId: string): boolean => {
     const pigment = inventory.find(p => p.pigmentId === pigmentId);
-    return pigment ? pigment.usesLeft > 0 : false;
+    return pigment ? true : false;
   }, [inventory]);
 
   // Add pigment to inventory instantly (for UI responsiveness)
@@ -251,7 +249,6 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
         const updated = [...prev];
         updated[existingIndex] = {
           ...updated[existingIndex],
-          usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
           collectedAt: pigment.collectedAt,
           collectedFrom: pigment.collectedFrom
         };
@@ -263,6 +260,11 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     });
   }, []);
 
+  // No longer needed - pigments have unlimited uses
+  const restoreAllPigments = useCallback(async () => {
+    console.log('Pigments now have unlimited uses - no need to restore');
+  }, []);
+
   return {
     inventory,
     loading,
@@ -271,6 +273,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     addPigment,
     usePigment,
     canUsePigment,
-    addPigmentToInventory
+    addPigmentToInventory,
+    restoreAllPigments
   };
 };

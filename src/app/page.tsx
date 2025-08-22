@@ -13,7 +13,7 @@ import { UserPigment } from '@/types';
 import { formatTimeUntilResetSafe, getCurrentDayIdKSTSafe } from '@/utils/clientOnly';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'map' | 'canvas'>('canvas');
+  const [activeTab, setActiveTab] = useState<'map' | 'canvas'>('map');
   const [collectionMessage, setCollectionMessage] = useState('');
   const [showTestingInfo, setShowTestingInfo] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState('');
@@ -39,6 +39,36 @@ export default function Home() {
       pigment.rarity,
       pigment.collectedFrom
     ).catch(console.error);
+  };
+
+  // 色の回数を最大まで回復する機能
+  const restoreAllPigments = async () => {
+    try {
+      // 各色の回数を最大（5回）に設定
+      const maxUses = 5;
+      
+      // 現在の在庫の各色の回数を最大に回復
+      const restoredInventory = inventory.map(pigment => ({
+        ...pigment,
+        usesLeft: maxUses
+      }));
+      
+      // 在庫を更新（UI即座反映）
+      // 各色を個別に更新
+      restoredInventory.forEach(pigment => {
+        addPigmentToInventory(pigment);
+      });
+      
+      setCollectionMessage('All pigments restored to maximum uses! 🎨');
+      setTimeout(() => setCollectionMessage(''), 5000);
+      
+      console.log('Pigments restored to maximum uses:', restoredInventory);
+      
+    } catch (error) {
+      console.error('Failed to restore pigments:', error);
+      setCollectionMessage('Failed to restore pigments. Please try again.');
+      setTimeout(() => setCollectionMessage(''), 5000);
+    }
   };
 
   // Prevent SSR hydration mismatch
@@ -140,13 +170,22 @@ export default function Home() {
                 <strong>Location Bypass:</strong> {process.env.NEXT_PUBLIC_BYPASS_LOCATION === 'true' ? 'ON' : 'OFF'}
                 <br />
                 <strong>Daily Limit Bypass:</strong> {process.env.NEXT_PUBLIC_BYPASS_DAILY_LIMIT === 'true' ? 'ON' : 'OFF'}
+                <br />
+                <strong>Default Location:</strong> 37.545929, 127.045590
               </div>
               <div>
-                <strong>Current Location:</strong> {location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : 'Loading...'}
+                <strong>Current Location:</strong> {location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : 'Loading...'}
                 <br />
                 <strong>Nearby Cafes:</strong> {nearbyCafes.length} found
                 <br />
                 <strong>In Range:</strong> {collectibleCafes.length} cafes
+                <br />
+                <button
+                  onClick={restoreAllPigments}
+                  className="mt-2 bg-[#4F1412] text-white px-3 py-1 rounded text-xs hover:bg-[#3E100E] transition-colors"
+                >
+                  Restore All Pigments
+                </button>
               </div>
             </div>
           </div>
