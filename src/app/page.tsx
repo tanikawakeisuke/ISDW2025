@@ -134,7 +134,7 @@ export default function Home() {
                 className="h-48 w-48"
               />
               <img 
-                src="/logo.svg" 
+                src="/main-logo.svg" 
                 alt="Urban Pigment Logo" 
                 className="h-96 w-auto max-w-none"
                 style={{ height: '640px' }}
@@ -166,7 +166,7 @@ export default function Home() {
                 className="h-20 w-20"
               />
               <img 
-                src="/logo.svg" 
+                src="/main-logo.svg" 
                 alt="Urban Pigment Logo" 
                 className="h-56 w-auto"
               />

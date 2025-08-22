@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, doc, onSnapshot, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseAvailable } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { CanvasPixel, CanvasDay, CANVAS_CONFIG } from '@/types';
 import { getCurrentDayId, getPixelKey, parsePixelKey, isValidCoordinate } from '@/utils/canvasUtils';
@@ -27,9 +27,8 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
 
   // Initialize canvas for current day
   const initializeCanvas = useCallback(async () => {
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable() || !db) {
       console.log('Canvas initialized in offline mode');
       setLoading(false);
       return;
@@ -71,9 +70,8 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
 
     initializeCanvas();
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable() || !db) {
       // Use local storage for testing
       const savedPixels = localStorage.getItem(`canvas-${currentDayId}`);
       const pixelMap = new Map<string, CanvasPixel>();
@@ -161,9 +159,8 @@ export const usePlaceCanvas = (): UsePlaceCanvasResult => {
 
     const pixelKey = getPixelKey(x, y);
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable() || !db) {
       // Update local state and localStorage for testing
       const newPixel: CanvasPixel = {
         x,
