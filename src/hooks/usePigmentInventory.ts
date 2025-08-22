@@ -157,9 +157,8 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
   ) => {
     if (!user?.uid) return;
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable() || !db) {
       // Update local inventory for testing
       const existing = inventory.find(p => p.pigmentId === pigmentId);
       let updatedInventory;
@@ -218,10 +217,8 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     const pigment = inventory.find(p => p.pigmentId === pigmentId);
     if (!pigment || pigment.usesLeft <= 0) return false;
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable() || !db) {
       // Update local inventory for testing
       const updatedInventory = inventory.map(p => 
         p.pigmentId === pigmentId 

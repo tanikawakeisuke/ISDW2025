@@ -127,7 +127,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E9EACE] to-[#F7F9EF]">
         <div className="text-center p-8">
           <div className="mb-8">
-            <div className="flex items-center justify-center space-x-3 mb-6">
+            <div className="flex items-center justify-center space-x-1 mb-6">
               <img 
                 src="/app-logo.svg" 
                 alt="App Logo" 
@@ -159,7 +159,7 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-60">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <img 
                 src="/app-logo.svg" 
                 alt="App Logo" 
