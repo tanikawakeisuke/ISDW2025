@@ -14,25 +14,65 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only on client side and when not disabled
+// Initialize Firebase with proper validation
 let app: any = null;
 let auth: any = null;
 let db: any = null;
 
-if (typeof window !== 'undefined' && !isFirebaseDisabled) {
+// Helper function to initialize Firebase
+function initializeFirebaseApp() {
+  if (isFirebaseDisabled) {
+    console.log('Firebase is disabled for testing');
+    return null;
+  }
+
+  // Validate required config
+  if (!firebaseConfig.apiKey || 
+      !firebaseConfig.authDomain || 
+      !firebaseConfig.projectId ||
+      firebaseConfig.apiKey === 'your_api_key_here') {
+    console.warn('Firebase config incomplete or using placeholder values');
+    return null;
+  }
+
   try {
     // Check if Firebase app is already initialized
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
+    const existingApp = getApps().find(app => app.name === '[DEFAULT]');
+    if (existingApp) {
+      return existingApp;
+    }
+    
+    return initializeApp(firebaseConfig);
   } catch (error) {
-    console.warn('Firebase initialization failed:', error);
-    // Continue without Firebase
+    console.error('Firebase initialization failed:', error);
+    return null;
   }
 }
 
-// Export with fallbacks for SSR
+// Initialize on client side only
+if (typeof window !== 'undefined') {
+  app = initializeFirebaseApp();
+  
+  if (app) {
+    try {
+      auth = getAuth(app);
+      db = getFirestore(app);
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.error('Firebase services initialization failed:', error);
+      auth = null;
+      db = null;
+    }
+  }
+}
+
+// Export with null safety
 export { auth, db };
+
+// Helper to check if Firebase is available
+export const isFirebaseAvailable = () => {
+  return !isFirebaseDisabled && db !== null && auth !== null;
+};
 
 // Anonymous authentication helper
 export const signInAnonymouslyHelper = async () => {

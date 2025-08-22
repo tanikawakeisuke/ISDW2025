@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseAvailable } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserPigment, CANVAS_CONFIG } from '@/types';
 
@@ -38,9 +38,8 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       return;
     }
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable()) {
       // Load from localStorage or use demo inventory
       const savedInventory = localStorage.getItem(`inventory-${user.uid}`);
       if (savedInventory) {
@@ -103,6 +102,13 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
         setInventory(demoInventory);
         localStorage.setItem(`inventory-${user.uid}`, JSON.stringify(demoInventory));
       }
+      setLoading(false);
+      return;
+    }
+
+    // Additional null check for db
+    if (!db) {
+      console.error('Firebase db is not available for pigment inventory');
       setLoading(false);
       return;
     }

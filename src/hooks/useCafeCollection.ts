@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { collection, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseAvailable } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Cafe, 
@@ -57,9 +57,8 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
       return;
     }
 
-    // Check if Firebase is disabled for testing
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
+    // Check if Firebase is available
+    if (!isFirebaseAvailable()) {
       // Load from localStorage for testing
       const savedStatus = localStorage.getItem(`daily-status-${currentDayId}-${user.uid}`);
       if (savedStatus) {
@@ -73,6 +72,17 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
         setDailyStatus(newStatus);
         localStorage.setItem(`daily-status-${currentDayId}-${user.uid}`, JSON.stringify(newStatus));
       }
+      return;
+    }
+
+    // Additional null check for db
+    if (!db) {
+      console.error('Firebase db is not available');
+      setDailyStatus({
+        dayId: currentDayId,
+        collectedCafes: [],
+        totalCollections: 0
+      });
       return;
     }
 
