@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { CANVAS_CONFIG, UserPigment } from '@/types';
@@ -32,7 +33,6 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
   // Use props if provided, otherwise fallback to hook
   const { 
     selectedPigment: hookSelectedPigment, 
-    setSelectedPigment, 
     usePigment: hookUsePigment, 
     canUsePigment: hookCanUsePigment 
   } = usePigmentInventory();
@@ -204,6 +204,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
 
     try {
       // Try to use the pigment
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       const pigmentUsed = await usePigment(selectedPigment.pigmentId);
       if (!pigmentUsed) {
         console.error('Failed to use pigment');

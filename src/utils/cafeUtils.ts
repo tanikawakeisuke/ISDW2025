@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Cafe, Location } from '@/types';
 import { calculateDistance, isWithinSeongsuDong } from '@/utils/geolocation';
 

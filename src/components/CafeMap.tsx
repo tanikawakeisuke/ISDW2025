@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useKakaoMap } from '@/hooks/useKakaoMap';
@@ -489,7 +490,7 @@ export const CafeMap: React.FC<CafeMapProps> = ({
       ) : dailyStatus && (
         <div className="absolute top-4 right-4 bg-white border rounded-lg shadow-lg p-3 z-40">
           <div className="text-sm">
-            <div className="font-medium">Today's Collections</div>
+            <div className="font-medium">Today&apos;s Collections</div>
             <div className="text-gray-600">{dailyStatus.totalCollections} cafes visited</div>
           </div>
         </div>

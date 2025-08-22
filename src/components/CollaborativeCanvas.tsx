@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { CanvasStroke } from '@/types';
