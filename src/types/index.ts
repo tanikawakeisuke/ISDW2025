@@ -18,6 +18,7 @@ export interface UserPigment {
   color: string;
   name: string;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  usesLeft: number; // Maximum 5
   lastUsed?: Date;
   collectedAt: Date;
   collectedFrom: string; // cafe ID
@@ -52,7 +53,8 @@ export interface CanvasDay {
 // Canvas Configuration
 export const CANVAS_CONFIG = {
   WIDTH: 512,
-  HEIGHT: 288
+  HEIGHT: 288,
+  MAX_PIGMENT_USES: 5
 } as const;
 
 // Location types
@@ -125,4 +127,14 @@ export interface DailyCollectionStatus {
   dayId: string; // YYYYMMDD
   collectedCafes: string[]; // cafe IDs
   totalCollections: number;
+}
+
+// Collaborative Canvas Stroke
+export interface CanvasStroke {
+  id: string;
+  points: { x: number; y: number }[];
+  color: string;
+  brushSize: number;
+  timestamp: Date;
+  userId: string;
 }

@@ -38,7 +38,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
   } = usePigmentInventory();
   
   const selectedPigment = propSelectedPigment !== undefined ? propSelectedPigment : hookSelectedPigment;
-  const usePigment = propUsePigment || hookUsePigment;
+  const performPigmentUse = propUsePigment || hookUsePigment;
   const canUsePigment = propCanUsePigment || hookCanUsePigment;
 
 
@@ -136,9 +136,6 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.imageSmoothingEnabled = false;
-      ctx.webkitImageSmoothingEnabled = false;
-      ctx.mozImageSmoothingEnabled = false;
-      ctx.msImageSmoothingEnabled = false;
       
       // Reset any transformations that might cause coordinate offset
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -204,8 +201,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
 
     try {
       // Try to use the pigment
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const pigmentUsed = await usePigment(selectedPigment.pigmentId);
+      const pigmentUsed = await performPigmentUse(selectedPigment.pigmentId);
       if (!pigmentUsed) {
         console.error('Failed to use pigment');
         return;
@@ -332,8 +328,6 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
           onMouseLeave={handleCanvasLeave}
           style={{ 
             imageRendering: 'pixelated',
-            imageRendering: '-moz-crisp-edges' as any,
-            imageRendering: 'crisp-edges' as any,
             display: 'block',
             width: `${CANVAS_CONFIG.WIDTH}px`,
             height: `${CANVAS_CONFIG.HEIGHT}px`,
@@ -364,7 +358,7 @@ export const PlaceCanvas: React.FC<PlaceCanvasProps> = ({
       <div className="text-sm text-gray-600 space-y-1">
         <p>• Select a pigment from your inventory below</p>
         <p>• Click on an empty pixel to place your color</p>
-        <p>• Each pigment has unlimited uses</p>
+        <p>• Each pigment can be used up to {CANVAS_CONFIG.MAX_PIGMENT_USES} times</p>
         <p>• Canvas resets daily at midnight KST</p>
       </div>
     </div>

@@ -371,7 +371,7 @@ export const CafeMap: React.FC<CafeMapProps> = ({
   }, [map, cafeData]);
 
   // Handle cafe collection with instant UI response
-  const handleCollectFromCafe = (cafe: Cafe) => {
+  const handleCollectFromCafe = async (cafe: Cafe) => {
     if (!cafe || collecting) return;
 
     setCollecting(true);
@@ -379,7 +379,7 @@ export const CafeMap: React.FC<CafeMapProps> = ({
 
     try {
       // Instant synchronous collection
-      const result = collectFromCafe(cafe);
+      const result = await collectFromCafe(cafe);
       
       if (result.success && result.pigment) {
         setCollectionMessage(`Collected ${result.pigment.name}! 🎨`);

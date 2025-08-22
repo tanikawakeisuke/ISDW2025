@@ -195,11 +195,11 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
   }, [refreshCafes]);
 
   // Collect pigment from cafe with instant response
-  const collectFromCafe = useCallback((cafe: Cafe): { 
+  const collectFromCafe = useCallback(async (cafe: Cafe): Promise<{ 
     success: boolean; 
     pigment?: UserPigment; 
     error?: string 
-  } => {
+  }> => {
     if (!user?.uid || !userLocation || !dailyStatus) {
       return { success: false, error: 'User not authenticated or location unavailable' };
     }
@@ -224,6 +224,7 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
       color: generatedPigment.color,
       name: generatedPigment.name,
       rarity: generatedPigment.rarity,
+      usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
       collectedAt: new Date(),
       collectedFrom: cafe.id
     };
@@ -236,12 +237,24 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
     };
     setDailyStatus(updatedStatus);
 
-    // Background save to storage (fire and forget)
-    const saveToStorage = async () => {
+    // Save to storage
+    try {
       const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
       if (firebaseDisabled) {
         // Save to localStorage for testing
-        localStorage.setItem(`daily-status-${currentDayId}-${user.uid}`, JSON.stringify(updatedStatus));
+        const savedStatus = localStorage.getItem(`daily-status-${currentDayId}-${user.uid}`);
+        if (savedStatus) {
+          const parsedStatus = JSON.parse(savedStatus);
+          const newCollectedCafes = [...parsedStatus.collectedCafes, cafe.id];
+          const newTotalCollections = parsedStatus.totalCollections + 1;
+          localStorage.setItem(`daily-status-${currentDayId}-${user.uid}`, JSON.stringify({
+            ...parsedStatus,
+            collectedCafes: newCollectedCafes,
+            totalCollections: newTotalCollections
+          }));
+        } else {
+          localStorage.setItem(`daily-status-${currentDayId}-${user.uid}`, JSON.stringify(updatedStatus));
+        }
 
         // Save collection history
         const collectionHistory: CafeCollection = {
@@ -268,52 +281,49 @@ export const useCafeCollection = (userLocation: Location | null): UseCafeCollect
         const updatedInventory = [...existingInventory, userPigment];
         localStorage.setItem(inventoryKey, JSON.stringify(updatedInventory));
       } else {
-        // Save to Firestore in background
-        try {
-          const statusRef = doc(db, 'users', user.uid, 'daily_status', currentDayId);
-          const collectionRef = doc(db, 'users', user.uid, 'collections', `${currentDayId}_${cafe.id}`);
-          const pigmentRef = doc(db, 'users', user.uid, 'pigments', generatedPigment.color);
+        // Save to Firestore
+        const statusRef = doc(db, 'users', user.uid, 'daily_status', currentDayId);
+        const collectionRef = doc(db, 'users', user.uid, 'collections', `${currentDayId}_${cafe.id}`);
+        const pigmentRef = doc(db, 'users', user.uid, 'pigments', generatedPigment.color);
 
-          // Parallel batch operations for speed
-          const promises = [
-            setDoc(statusRef, updatedStatus),
-            setDoc(collectionRef, {
-              cafeId: cafe.id,
-              cafeName: cafe.name,
-              cafeType: cafe.type,
-              pigmentCollected: {
-                id: userPigment.pigmentId,
-                name: userPigment.name,
-                color: userPigment.color,
-                rarity: userPigment.rarity
-              },
-              timestamp: new Date(),
-              location: userLocation,
-              rarityFactors: rarityResult.factors
-            }),
-            setDoc(pigmentRef, {
-              pigmentId: userPigment.pigmentId,
-              color: userPigment.color,
+        // Parallel batch operations for speed
+        const promises = [
+          setDoc(statusRef, updatedStatus),
+          setDoc(collectionRef, {
+            cafeId: cafe.id,
+            cafeName: cafe.name,
+            cafeType: cafe.type,
+            pigmentCollected: {
+              id: userPigment.pigmentId,
               name: userPigment.name,
-              rarity: userPigment.rarity,
-              collectedAt: new Date(),
-              collectedFrom: cafe.id
-            })
-          ];
+              color: userPigment.color,
+              rarity: userPigment.rarity
+            },
+            timestamp: new Date(),
+            location: userLocation,
+            rarityFactors: rarityResult.factors
+          }),
+          setDoc(pigmentRef, {
+            pigmentId: userPigment.pigmentId,
+            color: userPigment.color,
+            name: userPigment.name,
+            rarity: userPigment.rarity,
+            usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
+            collectedAt: new Date(),
+            collectedFrom: cafe.id
+          })
+        ];
 
-          await Promise.all(promises);
-        } catch (error) {
-          console.error('Background save error:', error);
-          // UI already updated, continue silently
-        }
+        await Promise.all(promises);
       }
-    };
-
-    // Execute save in background (non-blocking)
-    saveToStorage().catch(console.error);
-
-    // Return immediately for responsive UI
-    return { success: true, pigment: userPigment };
+      return { success: true, pigment: userPigment };
+    } catch (error: unknown) {
+      console.error('Collection save error:', error);
+      // Revert optimistic UI update if save fails
+      setDailyStatus(dailyStatus); // Revert to previous state
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save collection';
+      return { success: false, error: errorMessage };
+    }
   }, [user?.uid, userLocation, dailyStatus, nearbyCafes, currentDayId]);
 
   // Cleanup on unmount

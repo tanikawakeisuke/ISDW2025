@@ -17,7 +17,7 @@ declare global {
         InfoWindow: any;
         Polygon: any;
         event: {
-          addListener: (target: any, type: string, handler: () => void) => void;
+          addListener: (target: any, type: string, handler: (...args: any[]) => void) => void;
         };
         services: {
           Places: any;

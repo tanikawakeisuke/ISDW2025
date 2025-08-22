@@ -22,7 +22,7 @@ export default function Home() {
   const { user, signIn } = useAuth();
   const { location, error: locationError, refetch } = useLocation(true);
   const { nearbyCafes, collectibleCafes, dailyStatus } = useCafeCollection(location);
-  const { addPigment, inventory, selectedPigment, setSelectedPigment, usePigment, canUsePigment, addPigmentToInventory, editPigment } = usePigmentInventory();
+  const { addPigment, inventory, selectedPigment, setSelectedPigment, usePigment, canUsePigment, addPigmentToInventory } = usePigmentInventory();
 
   // Handle pigment collection from cafe with instant UI update
   const handlePigmentCollected = async (pigment: UserPigment) => {
@@ -311,7 +311,6 @@ export default function Home() {
               selectedPigment={selectedPigment}
               setSelectedPigment={setSelectedPigment}
               canUsePigment={canUsePigment}
-              editPigment={editPigment}
             />
             
             {/* r/Place Canvas */}

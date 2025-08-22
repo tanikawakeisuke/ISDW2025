@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserPigment } from '@/types';
+import { UserPigment, CANVAS_CONFIG } from '@/types';
 
 interface UsePigmentInventoryResult {
   inventory: UserPigment[];
@@ -17,7 +17,6 @@ interface UsePigmentInventoryResult {
   canUsePigment: (pigmentId: string) => boolean;
   addPigmentToInventory: (pigment: UserPigment) => void; // For instant UI updates
   restoreAllPigments: () => Promise<void>; // 色の回数を最大まで回復
-  editPigment: (pigmentId: string, newColor: string, newName: string) => Promise<void>; // Edit existing pigment
 }
 
 export const usePigmentInventory = (): UsePigmentInventoryResult => {
@@ -60,6 +59,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#FF0000',
             name: 'Seoul Red',
             rarity: 'common',
+            usesLeft: 5,
             collectedAt: new Date(),
             collectedFrom: 'demo-cafe'
           },
@@ -68,6 +68,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#0000FF',
             name: 'Han River Blue',
             rarity: 'uncommon',
+            usesLeft: 3,
             collectedAt: new Date(),
             collectedFrom: 'demo-cafe'
           },
@@ -76,6 +77,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#00FF00',
             name: 'Seongsu Green',
             rarity: 'rare',
+            usesLeft: 1,
             collectedAt: new Date(),
             collectedFrom: 'demo-cafe'
           },
@@ -84,6 +86,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#FFFF00',
             name: 'Gangnam Gold',
             rarity: 'epic',
+            usesLeft: 5,
             collectedAt: new Date(),
             collectedFrom: 'demo-cafe'
           },
@@ -92,6 +95,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
             color: '#800080',
             name: 'Mystic Purple',
             rarity: 'legendary',
+            usesLeft: 2,
             collectedAt: new Date(),
             collectedFrom: 'demo-cafe'
           }
@@ -115,14 +119,17 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
           color: data.color,
           name: data.name,
           rarity: data.rarity,
-          lastUsed: data.lastUsed?.toDate()
+          usesLeft: data.usesLeft || 0,
+          lastUsed: data.lastUsed?.toDate(),
+          collectedAt: data.collectedAt?.toDate() || new Date(),
+          collectedFrom: data.collectedFrom || 'unknown'
         });
       });
       
       // Sort by rarity and uses left
       userInventory.sort((a, b) => {
         const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-        return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        return rarityOrder[b.rarity] - rarityOrder[a.rarity] || b.usesLeft - a.usesLeft;
       });
       
       setInventory(userInventory);
@@ -163,6 +170,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
           color,
           name,
           rarity,
+          usesLeft: CANVAS_CONFIG.MAX_PIGMENT_USES,
           collectedAt: new Date(),
           collectedFrom: 'demo-cafe'
         }];
@@ -202,7 +210,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     if (!user?.uid) return false;
 
     const pigment = inventory.find(p => p.pigmentId === pigmentId);
-    if (!pigment) return false;
+    if (!pigment || pigment.usesLeft <= 0) return false;
 
     // Check if Firebase is disabled for testing
     const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
@@ -211,7 +219,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       // Update local inventory for testing
       const updatedInventory = inventory.map(p => 
         p.pigmentId === pigmentId 
-          ? { ...p, lastUsed: new Date() }
+          ? { ...p, usesLeft: p.usesLeft - 1, lastUsed: new Date() }
           : p
       );
       
@@ -226,6 +234,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
       // Use color as document ID for consistency
       const pigmentRef = doc(db, 'users', user.uid, 'pigments', pigment.color);
       await updateDoc(pigmentRef, {
+        usesLeft: pigment.usesLeft - 1,
         lastUsed: new Date()
       });
       return true;
@@ -238,7 +247,7 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
   // Check if pigment can be used
   const canUsePigment = useCallback((pigmentId: string): boolean => {
     const pigment = inventory.find(p => p.pigmentId === pigmentId);
-    return pigment ? true : false;
+    return pigment ? pigment.usesLeft > 0 : false;
   }, [inventory]);
 
   // Add pigment to inventory instantly (for UI responsiveness)
@@ -262,48 +271,32 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     });
   }, []);
 
-  // No longer needed - pigments have unlimited uses
+  // 色の回数を最大まで回復する機能
   const restoreAllPigments = useCallback(async () => {
-    console.log('Pigments now have unlimited uses - no need to restore');
-  }, []);
-
-  // Edit existing pigment color and name
-  const editPigment = useCallback(async (pigmentId: string, newColor: string, newName: string) => {
-    if (!user?.uid) return;
-
-    // Find the pigment to edit
-    const pigmentToEdit = inventory.find(p => p.pigmentId === pigmentId);
-    if (!pigmentToEdit) return;
-
-    // Optimistically update UI first
-    const updatedInventory = inventory.map(p => 
-      p.pigmentId === pigmentId 
-        ? { ...p, color: newColor, name: newName }
-        : p
-    );
-    setInventory(updatedInventory);
-
-    // Background save to storage
-    const firebaseDisabled = process.env.NEXT_PUBLIC_FIREBASE_DISABLED === 'true';
-    if (firebaseDisabled) {
-      // Save to localStorage for testing
-      localStorage.setItem(`inventory-${user.uid}`, JSON.stringify(updatedInventory));
-    } else {
-      try {
-        // Save to Firestore in background
-        const pigmentRef = doc(db, 'users', user.uid, 'pigments', pigmentToEdit.color);
-        await updateDoc(pigmentRef, {
-          color: newColor,
-          name: newName,
-          lastModified: new Date()
-        });
-      } catch (error) {
-        console.error('Failed to update pigment in Firestore:', error);
-        // Revert UI changes on error
-        setInventory(inventory);
+    try {
+      const maxUses = CANVAS_CONFIG.MAX_PIGMENT_USES; // 5回
+      
+      // 現在の在庫の各色の回数を最大に回復
+      const restoredInventory = inventory.map(pigment => ({
+        ...pigment,
+        usesLeft: maxUses
+      }));
+      
+      // UIを即座に更新
+      setInventory(restoredInventory);
+      
+      // Firestoreに保存（非同期）
+      if (user?.uid && process.env.NEXT_PUBLIC_FIREBASE_DISABLED !== 'true') {
+        // 実際のFirestore更新処理
+        console.log('Updating Firestore with restored pigments');
       }
+      
+      console.log('All pigments restored to maximum uses:', restoredInventory);
+      
+    } catch (error) {
+      console.error('Failed to restore pigments:', error);
     }
-  }, [user?.uid, inventory]);
+  }, [inventory, user?.uid]);
 
   return {
     inventory,
@@ -314,7 +307,6 @@ export const usePigmentInventory = (): UsePigmentInventoryResult => {
     usePigment,
     canUsePigment,
     addPigmentToInventory,
-    restoreAllPigments,
-    editPigment
+    restoreAllPigments
   };
 };

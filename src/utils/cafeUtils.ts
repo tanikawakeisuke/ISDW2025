@@ -175,7 +175,8 @@ async function searchBakeryPage(location: Location, radius: number, size: number
     const places = new window.kakao.maps.services.Places();
     
     places.categorySearch('FD6', (data: any, status: any, pagination: any) => {
-      if (status === window.kakao.maps.services.Status.OK) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (status === (window as any).kakao.maps.services.Status.OK) {
         const bakeries: Cafe[] = data
           .map((place: any) => ({
             id: `bakery_${place.id}`,
@@ -192,7 +193,8 @@ async function searchBakeryPage(location: Location, radius: number, size: number
           });
 
         resolve(bakeries);
-      } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if (status === (window as any).kakao.maps.services.Status.ZERO_RESULT) {
         resolve([]);
       } else {
         reject(new Error(`Failed to search bakeries page ${page}`));
@@ -214,7 +216,8 @@ async function searchCafesPage(location: Location, radius: number, size: number,
     const places = new window.kakao.maps.services.Places();
     
     places.categorySearch('CE7', (data: any, status: any, pagination: any) => {
-      if (status === window.kakao.maps.services.Status.OK) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (status === (window as any).kakao.maps.services.Status.OK) {
         const cafes: Cafe[] = data
           .map((place: any) => ({
             id: `fixed_${place.id}`,
@@ -231,7 +234,8 @@ async function searchCafesPage(location: Location, radius: number, size: number,
           });
 
         resolve(cafes);
-      } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if (status === (window as any).kakao.maps.services.Status.ZERO_RESULT) {
         resolve([]);
       } else {
         reject(new Error(`Failed to search cafes page ${page}`));

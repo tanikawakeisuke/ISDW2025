@@ -40,8 +40,8 @@ const BYPASS_LOCATION = process.env.NEXT_PUBLIC_BYPASS_LOCATION === 'true';
 
 // 一般公開時のデフォルト位置（聖水洞エリア内）
 const DEFAULT_PUBLIC_LOCATION: Location = {
-  lat: 37.545929,
-  lng: 127.045590,
+  lat: 37.546011,
+  lng: 127.045591,
   accuracy: 100
 };
 
@@ -78,8 +78,8 @@ export const getCurrentPosition = (): Promise<Location> => {
     if (BYPASS_LOCATION) {
       // Return location near Seongsu Station (within polygon)
       resolve({
-        lat: 37.5444,
-        lng: 127.0445,
+        lat: 37.546011,
+        lng: 127.045591,
         accuracy: 10, // Mock high accuracy
       });
       return;
@@ -126,8 +126,8 @@ export const watchPosition = (
   if (BYPASS_LOCATION) {
     // Return fixed location once, no interval updates
     onSuccess({
-      lat: 37.5444,
-      lng: 127.0445,
+      lat: 37.546011,
+      lng: 127.045591,
       accuracy: 10,
     });
     

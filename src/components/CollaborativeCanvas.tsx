@@ -136,6 +136,7 @@ export const CollaborativeCanvas: React.FC<CollaborativeCanvasProps> = ({
       color: selectedColor,
       points: currentStroke,
       timestamp: new Date(),
+      brushSize: brushSize, // Add this line
     };
 
     setStrokes(prev => [...prev, newStroke]);

@@ -43,7 +43,7 @@ export const isToday = (date: Date): boolean => {
 
 // Format date in KST
 export const formatKSTDate = (date: Date, formatString: string = 'yyyy-MM-dd HH:mm:ss'): string => {
-  return format(toZonedTime(date, KST_TIMEZONE), formatString, { timeZone: KST_TIMEZONE });
+  return format(toZonedTime(date, KST_TIMEZONE), formatString);
 };
 
 // Get the next reset time (tomorrow at 00:00 KST)
