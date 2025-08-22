@@ -2,9 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { Palette, Users, Clock, Settings, Coffee } from 'lucide-react';
-import { CafeMap } from '@/components/CafeMap';
-import { PlaceCanvas } from '@/components/PlaceCanvas';
-import { PigmentPalette } from '@/components/PigmentPalette';
+import dynamic from 'next/dynamic';
+
+// Dynamically import components that depend on browser APIs
+const CafeMap = dynamic(() => import('@/components/CafeMap').then(mod => ({ default: mod.CafeMap })), {
+  ssr: false,
+  loading: () => <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading Map...</div>
+});
+
+const PlaceCanvas = dynamic(() => import('@/components/PlaceCanvas').then(mod => ({ default: mod.PlaceCanvas })), {
+  ssr: false,
+  loading: () => <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading Canvas...</div>
+});
+
+const PigmentPalette = dynamic(() => import('@/components/PigmentPalette').then(mod => ({ default: mod.PigmentPalette })), {
+  ssr: false,
+  loading: () => <div className="w-full h-32 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">Loading Palette...</div>
+});
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from '@/hooks/useLocation';
 import { useCafeCollection } from '@/hooks/useCafeCollection';
@@ -18,6 +32,7 @@ export default function Home() {
   const [showTestingInfo, setShowTestingInfo] = useState(false);
   const [timeUntilReset, setTimeUntilReset] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   
   const { user, signIn } = useAuth();
   const { location, error: locationError, refetch } = useLocation(true);
@@ -89,7 +104,23 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [mounted]);
 
-  // No longer needed - collection handled by CafeMap component
+  // Show error state if initialization failed
+  if (initError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E9EACE] to-[#F7F9EF]">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Application Error</h1>
+          <p className="text-gray-700 mb-4">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#4F1412] hover:bg-[#3E100E] text-white font-medium py-3 px-6 rounded-lg transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
